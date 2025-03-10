@@ -1,0 +1,91 @@
+﻿@{
+    ViewBag.Title = "Deposit";
+}
+
+<div class="deposit-container">
+    <h2>Deposit Money</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <p class="success-message">@TempData["Message"]</p>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <p class="error-message">@TempData["Error"]</p>
+    }
+
+    <form method="post" action="@Url.Action("Deposit", "Home")">
+        <label for="amount">Deposit Amount:</label>
+        <input type="number" id="amount" name="amount" min="100" step="100" required> <br />
+
+        <button type="submit" class="btn">Deposit</button>
+    </form>
+
+    <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
+</div>
+
+<style>
+    body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+    }
+
+    .deposit-container {
+        margin-top: 50px;
+    }
+
+    h2 {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-size: 18px;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    input {
+        font-size: 18px;
+        padding: 10px;
+        width: 250px;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+    .back {
+        background-color: gray;
+        margin-top: 10px;
+        display: inline-block;
+    }
+
+        .back:hover {
+            background-color: darkgray;
+        }
+
+    .success-message {
+        color: green;
+        font-weight: bold;
+    }
+
+    .error-message {
+        color: red;
+        font-weight: bold;
+    }
+</style>

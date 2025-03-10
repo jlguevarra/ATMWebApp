@@ -1,0 +1,75 @@
+﻿@{
+    ViewBag.Title = "Welcome to ATM";
+}
+
+<div class="atm-container">
+    <h1>Welcome to Northland ATM</h1>
+    <p>Please insert your card to proceed.</p>
+
+    <div class="atm-slot">
+        <img src="images/card.png" id="card" class="card" alt="ATM Card">
+    </div>
+
+    <p id="insert-text">Click the card to insert.</p>
+</div>
+
+<style>
+    body {
+        text-align: center;
+        background-color: #f4f4f4;
+        font-family: Arial, sans-serif;
+    }
+
+    .atm-container {
+        margin-top: 100px;
+    }
+
+    h1 {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+
+    .atm-slot {
+        width: 200px;
+        height: 50px;
+        background-color: black;
+        margin: 20px auto;
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card {
+        width: 180px;
+        position: absolute;
+        top: -100px;
+        left: 10px;
+        cursor: pointer;
+        transition: top 1s ease-in-out;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px 20px;
+        margin-top: 20px;
+        display: none;
+    }
+</style>
+
+<script>
+    document.getElementById("card").addEventListener("click", function() {
+        var card = document.getElementById("card");
+        var text = document.getElementById("insert-text");
+
+        // Move the card down to simulate insertion
+        card.style.top = "10px";
+
+        // Hide instruction text
+        text.innerHTML = "Processing...";
+
+        // Wait for animation to finish, then redirect
+        setTimeout(function() {
+            window.location.href = "@Url.Action("PinEntry", "Home")";
+        }, 1500);
+    });
+</script>

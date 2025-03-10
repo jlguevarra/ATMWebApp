@@ -1,0 +1,96 @@
+﻿@{
+    ViewBag.Title = "Mini Statement";
+}
+
+<div class="mini-statement-container">
+    <h2>Mini Statement</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ViewBag.Transactions != null)
+            {
+                foreach (var transaction in ViewBag.Transactions)
+                {
+                    <tr>
+                        <td>@transaction.Date</td>
+                        <td>@transaction.Type</td>
+                        <td>@transaction.Amount.ToString("C")</td>
+                        <td>@transaction.Balance.ToString("C")</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="4">No transactions found.</td></tr>
+            }
+        </tbody>
+    </table>
+
+    <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
+</div>
+
+<style>
+    body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+    }
+
+    .mini-statement-container {
+        margin-top: 50px;
+    }
+
+    h2 {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 80%;
+        margin: 0 auto;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        margin-top: 20px;
+        display: inline-block;
+    }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+    .back {
+        background-color: gray;
+    }
+
+        .back:hover {
+            background-color: darkgray;
+        }
+</style>

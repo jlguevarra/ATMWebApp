@@ -1,0 +1,81 @@
+﻿@{
+    ViewBag.Title = "Main Menu";
+}
+
+<div class="menu-container">
+    <h2>Welcome to Northland ATM</h2>
+    <p>Select an option below:</p>
+
+    <div class="menu-buttons">
+        <a href="@Url.Action("Withdraw", "Home")" class="btn">Withdraw Cash</a>
+        <a href="@Url.Action("CheckBalance", "Home")" class="btn">Check Balance</a>
+        <a href="@Url.Action("TransferFunds", "Home")" class="btn">Transfer Funds</a>
+        <a href="@Url.Action("ChangePin", "Home")" class="btn">Change PIN</a>
+        <a href="@Url.Action("MiniStatement", "Home")" class="btn">History</a>
+        <a href="@Url.Action("DepositCash", "Home")" class="btn">Cash Deposit</a>
+    </div>
+
+    <div class="logout-container">
+        <a href="@Url.Action("Logout", "Home")" class="btn logout">Logout</a>
+    </div>
+</div>
+
+<style>
+    body {
+        text-align: center;
+        background-color: #f4f4f4;
+        font-family: Arial, sans-serif;
+    }
+
+    .menu-container {
+        margin-top: 50px;
+    }
+
+    h2 {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+
+    p {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+
+    .menu-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        max-width: 400px;
+        margin: auto;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        text-align: center;
+    }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+    /* Logout Button - Properly Positioned */
+    .logout-container {
+        margin-top: 30px;
+    }
+
+    .logout {
+        background-color: red;
+        padding: 12px 30px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+        .logout:hover {
+            background-color: darkred;
+        }
+</style>

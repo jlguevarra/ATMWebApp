@@ -1,0 +1,96 @@
+﻿@{
+    ViewBag.Title = "Change PIN";
+}
+
+<div class="change-pin-container">
+    <h2>Change PIN</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <p class="success-message">@TempData["Message"]</p>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <p class="error-message">@TempData["Error"]</p>
+    }
+
+    <form method="post" action="@Url.Action("ChangePin", "Home")">
+        <label for="currentPin">Current PIN:</label>
+        <input type="password" id="currentPin" name="currentPin" required>
+
+        <label for="newPin">New PIN:</label>
+        <input type="password" id="newPin" name="newPin" pattern="\d{4,6}" title="Enter a 4-6 digit PIN" required>
+
+        <label for="confirmNewPin">Confirm New PIN:</label>
+        <input type="password" id="confirmNewPin" name="confirmNewPin" required> <br />
+
+        <button type="submit" class="btn">Change PIN</button>
+    </form>
+
+    <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
+</div>
+
+<style>
+    body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+    }
+
+    .change-pin-container {
+        margin-top: 50px;
+    }
+
+    h2 {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    label {
+        font-size: 18px;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    input {
+        font-size: 18px;
+        padding: 10px;
+        width: 200px;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+    .back {
+        background-color: gray;
+        margin-top: 10px;
+        display: inline-block;
+    }
+
+        .back:hover {
+            background-color: darkgray;
+        }
+
+    .success-message {
+        color: green;
+        font-weight: bold;
+    }
+
+    .error-message {
+        color: red;
+        font-weight: bold;
+    }
+</style>

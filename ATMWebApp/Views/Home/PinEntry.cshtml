@@ -1,0 +1,65 @@
+﻿@{
+    ViewBag.Title = "Enter PIN";
+}
+
+<div class="pin-container">
+    <h2>Enter Your PIN</h2>
+
+    <form method="post" action="@Url.Action("PinEntry", "Home")">
+        <label>PIN:</label>
+        <input type="password" name="pin" maxlength="4" required autofocus /> <br />
+
+        <button type="submit" class="btn">Enter</button>
+    </form>
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <p class="error">@ViewBag.ErrorMessage</p>
+    }
+</div>
+
+<style>
+    body {
+        text-align: center;
+        background-color: #f4f4f4;
+        font-family: Arial, sans-serif;
+    }
+
+    .pin-container {
+        margin-top: 100px;
+    }
+
+    h2 {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+
+    label {
+        font-size: 18px;
+        display: block;
+        margin-top: 10px;
+    }
+
+    input {
+        font-size: 24px;
+        text-align: center;
+        width: 200px;
+        padding: 5px;
+        margin-bottom: 10px;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px 20px;
+        margin-top: 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    .error {
+        color: red;
+        margin-top: 10px;
+    }
+</style>

@@ -1,0 +1,59 @@
+﻿@{
+    ViewBag.Title = "Check Balance";
+}
+
+<div class="balance-container">
+    <h2>Your Account Balance</h2>
+    <p class="balance">₱@ViewBag.Balance.ToString("N2")</p>
+
+    <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
+</div>
+
+<style>
+    body {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+    }
+
+    .balance-container {
+        margin-top: 50px;
+    }
+
+    h2 {
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+
+    .balance {
+        font-size: 32px;
+        font-weight: bold;
+        color: #28a745;
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        font-size: 20px;
+        padding: 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+    .back {
+        background-color: gray;
+        margin-top: 10px;
+        display: inline-block;
+    }
+
+        .back:hover {
+            background-color: darkgray;
+        }
+</style>
