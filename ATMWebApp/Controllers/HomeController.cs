@@ -10,7 +10,7 @@ namespace ATMWebApp.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly string connectionString = "server=localhost;database=u520535046_atm_db;user=u520535046_atm_db;password=;Atmcard246";
+        private readonly string connectionString = "server=localhost;database=atm_db;user=root;password=;";
         
 
         public HomeController(ILogger<HomeController> logger)
