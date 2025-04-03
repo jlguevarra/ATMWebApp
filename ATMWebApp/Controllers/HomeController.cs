@@ -1,22 +1,22 @@
 ﻿using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using ATMWebApp.Models;
 using MySql.Data.MySqlClient;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ATMWebApp.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly string connectionString = "server=localhost;database=atm_db;user=root;password=;";
+        private readonly string connectionString = "server=localhost;database=u520535046_atm_db;user=u520535046_atm_db;password=;Atmcard246";
         
 
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
         }
-
         public IActionResult Index()
         {
             return View();
@@ -30,18 +30,38 @@ namespace ATMWebApp.Controllers
         [HttpPost]
         public IActionResult PinEntry(string pin)
         {
-            string cardNumber = GetCardNumberFromDatabase(pin);
+            if (string.IsNullOrEmpty(pin))
+            {
+                TempData["Error"] = "Please enter your PIN.";
+                return RedirectToAction("PinEntry");
+            }
 
-            if (!string.IsNullOrEmpty(cardNumber))
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                HttpContext.Session.SetString("CardNumber", cardNumber);
-                return RedirectToAction("MainMenu");
+                conn.Open();
+
+                // ✅ Validate both card number and PIN
+                string query = "SELECT card_number FROM users WHERE pin = @pin LIMIT 1";
+                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@pin", pin);
+
+                    object result = cmd.ExecuteScalar(); // Get card number if exists
+
+                    if (result != null)
+                    {
+                        string cardNumber = result.ToString();
+                        HttpContext.Session.SetString("CardNumber", cardNumber); // Store session
+                        return RedirectToAction("MainMenu"); // Redirect to main menu
+                    }
+                    else
+                    {
+                        TempData["Error"] = "Invalid PIN. Please try again.";
+                    }
+                }
             }
-            else
-            {
-                ViewBag.ErrorMessage = "Invalid PIN.";
-                return View();
-            }
+
+            return RedirectToAction("PinEntry");
         }
 
         public IActionResult MainMenu()
@@ -53,7 +73,6 @@ namespace ATMWebApp.Controllers
             return View();
         }
 
-        // ✅ Withdraw GET Request
         public IActionResult Withdraw()
         {
             if (string.IsNullOrEmpty(HttpContext.Session.GetString("CardNumber")))
@@ -62,10 +81,7 @@ namespace ATMWebApp.Controllers
             }
             return View();
         }
-
-        // ✅ Withdraw POST Request (Processing Withdrawal)
-        [HttpPost]
-        public IActionResult Withdraw(decimal amount)
+        public IActionResult WithdrawFunds(decimal amount, string accountType)
         {
             string cardNumber = HttpContext.Session.GetString("CardNumber");
 
@@ -76,59 +92,87 @@ namespace ATMWebApp.Controllers
 
             if (amount <= 0)
             {
-                ViewBag.Message = "Withdrawal amount must be greater than zero.";
-                return View();
+                TempData["Error"] = "Withdrawal amount must be greater than zero.";
+                return RedirectToAction("Withdraw"); // Redirect to Withdraw page with error message
             }
 
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
 
-                // 1️⃣ Get current balance
-                string checkBalanceQuery = "SELECT balance FROM users WHERE card_number = @cardNumber";
-                MySqlCommand checkCmd = new MySqlCommand(checkBalanceQuery, conn);
-                checkCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
-                object result = checkCmd.ExecuteScalar();
+                string balanceQuery = accountType == "Savings"
+                    ? "SELECT savings_balance FROM users WHERE card_number = @cardNumber"
+                    : "SELECT current_balance FROM users WHERE card_number = @cardNumber";
 
-                if (result == null)
+                MySqlCommand balanceCmd = new MySqlCommand(balanceQuery, conn);
+                balanceCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
+                object balanceResult = balanceCmd.ExecuteScalar();
+
+                if (balanceResult == null)
                 {
-                    ViewBag.Message = "Account not found.";
-                    return View();
+                    TempData["Error"] = "Account not found.";
+                    return RedirectToAction("Withdraw");
                 }
 
-                decimal currentBalance = Convert.ToDecimal(result);
+                decimal balance = Convert.ToDecimal(balanceResult);
 
-                // 2️⃣ Check if sufficient balance
-                if (currentBalance < amount)
+                if (balance < amount)
                 {
-                    ViewBag.Message = "Insufficient balance.";
-                    return View();
+                    TempData["Error"] = "Insufficient balance.";
+                    return RedirectToAction("Withdraw");
                 }
 
-                decimal newBalance = currentBalance - amount;
+                // Update balance in the database
+                string updateQuery = accountType == "Savings"
+                    ? "UPDATE users SET savings_balance = savings_balance - @amount WHERE card_number = @cardNumber"
+                    : "UPDATE users SET current_balance = current_balance - @amount WHERE card_number = @cardNumber";
 
-                // 3️⃣ Update the balance
-                string updateBalanceQuery = "UPDATE users SET balance = @newBalance WHERE card_number = @cardNumber";
-                MySqlCommand updateCmd = new MySqlCommand(updateBalanceQuery, conn);
-                updateCmd.Parameters.AddWithValue("@newBalance", newBalance);
+                MySqlCommand updateCmd = new MySqlCommand(updateQuery, conn);
+                updateCmd.Parameters.AddWithValue("@amount", amount);
                 updateCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
                 updateCmd.ExecuteNonQuery();
 
-                // 4️⃣ Log transaction
-                string insertTransactionQuery = "INSERT INTO transactions (card_number, type, amount, balance) VALUES (@cardNumber, 'Withdrawal', @amount, @newBalance)";
-                MySqlCommand insertCmd = new MySqlCommand(insertTransactionQuery, conn);
-                insertCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
-                insertCmd.Parameters.AddWithValue("@amount", amount);
-                insertCmd.Parameters.AddWithValue("@newBalance", newBalance); // Corrected variable
-                insertCmd.ExecuteNonQuery();
+                // Log transaction after successful withdrawal with account type
+                string transactionQuery = "INSERT INTO transactions (card_number, date, type, amount, balance, account_type) VALUES (@cardNumber, @date, @type, @amount, @balance, @accountType)";
+                MySqlCommand transactionCmd = new MySqlCommand(transactionQuery, conn);
+                transactionCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
+                transactionCmd.Parameters.AddWithValue("@date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                transactionCmd.Parameters.AddWithValue("@type", "Withdrawal");
+                transactionCmd.Parameters.AddWithValue("@amount", -amount);
+                transactionCmd.Parameters.AddWithValue("@balance", balance - amount);
+                transactionCmd.Parameters.AddWithValue("@accountType", accountType); // Save Current/Savings account type
+                transactionCmd.ExecuteNonQuery();
 
-                ViewBag.Message = $"Withdrawal successful! New balance: {newBalance:C}";
+                TempData["Message"] = "Withdrawal successful!";
             }
 
-            return View();
+            return RedirectToAction("Withdraw"); // Redirect back to the Withdraw page
         }
 
+        private (decimal, decimal) GetBalanceFromDatabase(string cardNumber)
+        {
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "SELECT current_balance, savings_balance FROM users WHERE card_number = @cardNumber";
 
+                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@cardNumber", cardNumber);
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read()) // Check if data exists
+                        {
+                            decimal currentBalance = reader.GetDecimal(0);
+                            decimal savingsBalance = reader.GetDecimal(1);
+                            return (currentBalance, savingsBalance); // Return tuple
+                        }
+                    }
+                }
+            }
+
+            return (0, 0); // Return (0,0) if no data is found
+        }
 
         public IActionResult CheckBalance()
         {
@@ -139,30 +183,12 @@ namespace ATMWebApp.Controllers
                 return RedirectToAction("PinEntry"); // Redirect if not logged in
             }
 
-            decimal balance = GetBalanceFromDatabase(cardNumber);
+            var balances = GetBalanceFromDatabase(cardNumber);
 
-            if (balance < 0)
-            {
-                TempData["Error"] = "Error retrieving balance.";
-                return RedirectToAction("MainMenu");
-            }
+            ViewBag.CurrentBalance = balances.Item1; // Current balance
+            ViewBag.SavingsBalance = balances.Item2; // Savings balance
 
-            ViewBag.Balance = balance;
             return View();
-        }
-        private decimal GetBalanceFromDatabase(string cardNumber)
-        {
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                string query = "SELECT balance FROM users WHERE card_number = @cardNumber";
-                using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@cardNumber", cardNumber);
-                    object result = cmd.ExecuteScalar();
-                    return result != null ? Convert.ToDecimal(result) : -1; // Return -1 if no balance found
-                }
-            }
         }
 
         public IActionResult TransferFunds()
@@ -175,78 +201,138 @@ namespace ATMWebApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult TransferFunds(string recipient, decimal amount)
+        public IActionResult TransferFunds(string recipientCard, decimal amount, string accountType)
         {
-            string senderCardNumber = HttpContext.Session.GetString("CardNumber");
+            string senderCard = HttpContext.Session.GetString("CardNumber");
 
-            if (string.IsNullOrEmpty(senderCardNumber))
+            if (string.IsNullOrEmpty(senderCard))
             {
-                return RedirectToAction("PinEntry"); // Redirect if not logged in
+                return RedirectToAction("PinEntry");
             }
 
-            using (var connection = new MySqlConnection(connectionString))
+            // Prevent self-transfer
+            if (senderCard == recipientCard)
             {
-                connection.Open();
+                TempData["Error"] = "You cannot transfer funds to your own account!";
+                return RedirectToAction("TransferFunds");
+            }
 
-                // ✅ Check if recipient exists
-                string recipientQuery = "SELECT balance FROM users WHERE card_number = @recipient";
-                using (var recipientCmd = new MySqlCommand(recipientQuery, connection))
+            // Define transfer limits
+            decimal minTransfer = 100;    // Minimum transfer limit
+            decimal maxTransfer = 50000;  // Maximum transfer limit
+
+            if (amount < minTransfer || amount > maxTransfer)
+            {
+                TempData["Error"] = $"Transfer amount must be between ₱{minTransfer} and ₱{maxTransfer}.";
+                return RedirectToAction("TransferFunds");
+            }
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string balanceField = accountType == "Savings" ? "savings_balance" : "current_balance";
+
+                // Fetch sender's balance
+                string senderBalanceQuery = $"SELECT {balanceField} FROM users WHERE card_number = @cardNumber";
+                MySqlCommand senderBalanceCmd = new MySqlCommand(senderBalanceQuery, conn);
+                senderBalanceCmd.Parameters.AddWithValue("@cardNumber", senderCard);
+                object senderBalanceResult = senderBalanceCmd.ExecuteScalar();
+
+                if (senderBalanceResult == null)
                 {
-                    recipientCmd.Parameters.AddWithValue("@recipient", recipient);
-                    var recipientBalanceObj = recipientCmd.ExecuteScalar();
+                    TempData["Error"] = "Sender account not found.";
+                    return RedirectToAction("TransferFunds");
+                }
 
-                    if (recipientBalanceObj == null)
+                decimal senderBalance = Convert.ToDecimal(senderBalanceResult);
+
+                // Check if sender has enough funds
+                if (senderBalance < amount)
+                {
+                    TempData["Error"] = "Insufficient funds.";
+                    return RedirectToAction("TransferFunds");
+                }
+
+                // Fetch recipient's balance
+                string recipientBalanceQuery = $"SELECT {balanceField} FROM users WHERE card_number = @recipientCard";
+                MySqlCommand recipientBalanceCmd = new MySqlCommand(recipientBalanceQuery, conn);
+                recipientBalanceCmd.Parameters.AddWithValue("@recipientCard", recipientCard);
+                object recipientBalanceResult = recipientBalanceCmd.ExecuteScalar();
+
+                if (recipientBalanceResult == null)
+                {
+                    TempData["Error"] = "Recipient account not found.";
+                    return RedirectToAction("TransferFunds");
+                }
+
+                decimal recipientBalance = Convert.ToDecimal(recipientBalanceResult);
+
+                // Begin database transaction
+                using (MySqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
                     {
-                        TempData["Error"] = "Recipient card number not found!";
+                        // Deduct from sender
+                        string updateSenderQuery = $"UPDATE users SET {balanceField} = {balanceField} - @amount WHERE card_number = @cardNumber";
+                        MySqlCommand updateSenderCmd = new MySqlCommand(updateSenderQuery, conn, transaction);
+                        updateSenderCmd.Parameters.AddWithValue("@amount", amount);
+                        updateSenderCmd.Parameters.AddWithValue("@cardNumber", senderCard);
+                        updateSenderCmd.ExecuteNonQuery();
+
+                        // Add to recipient
+                        string updateRecipientQuery = $"UPDATE users SET {balanceField} = {balanceField} + @amount WHERE card_number = @recipientCard";
+                        MySqlCommand updateRecipientCmd = new MySqlCommand(updateRecipientQuery, conn, transaction);
+                        updateRecipientCmd.Parameters.AddWithValue("@amount", amount);
+                        updateRecipientCmd.Parameters.AddWithValue("@recipientCard", recipientCard);
+                        updateRecipientCmd.ExecuteNonQuery();
+
+                        // Get updated balances
+                        senderBalanceCmd = new MySqlCommand(senderBalanceQuery, conn, transaction);
+                        senderBalanceCmd.Parameters.AddWithValue("@cardNumber", senderCard);
+                        senderBalance = Convert.ToDecimal(senderBalanceCmd.ExecuteScalar());
+
+                        recipientBalanceCmd = new MySqlCommand(recipientBalanceQuery, conn, transaction);
+                        recipientBalanceCmd.Parameters.AddWithValue("@recipientCard", recipientCard);
+                        recipientBalance = Convert.ToDecimal(recipientBalanceCmd.ExecuteScalar());
+
+                        // Log transaction for sender
+                        string senderTransactionQuery = "INSERT INTO transactions (card_number, date, type, amount, balance, account_type) VALUES (@cardNumber, @date, @type, @amount, @balance, @accountType)";
+                        MySqlCommand senderTransactionCmd = new MySqlCommand(senderTransactionQuery, conn, transaction);
+                        senderTransactionCmd.Parameters.AddWithValue("@cardNumber", senderCard);
+                        senderTransactionCmd.Parameters.AddWithValue("@date", DateTime.Now);
+                        senderTransactionCmd.Parameters.AddWithValue("@type", "Transfer");
+                        senderTransactionCmd.Parameters.AddWithValue("@amount", -amount); // Negative for sender
+                        senderTransactionCmd.Parameters.AddWithValue("@balance", senderBalance);
+                        senderTransactionCmd.Parameters.AddWithValue("@accountType", accountType);
+                        senderTransactionCmd.ExecuteNonQuery();
+
+                        // Log transaction for recipient
+                        string recipientTransactionQuery = "INSERT INTO transactions (card_number, date, type, amount, balance, account_type) VALUES (@cardNumber, @date, @type, @amount, @balance, @accountType)";
+                        MySqlCommand recipientTransactionCmd = new MySqlCommand(recipientTransactionQuery, conn, transaction);
+                        recipientTransactionCmd.Parameters.AddWithValue("@cardNumber", recipientCard);
+                        recipientTransactionCmd.Parameters.AddWithValue("@date", DateTime.Now);
+                        recipientTransactionCmd.Parameters.AddWithValue("@type", "Transfer");
+                        recipientTransactionCmd.Parameters.AddWithValue("@amount", amount);
+                        recipientTransactionCmd.Parameters.AddWithValue("@balance", recipientBalance);
+                        recipientTransactionCmd.Parameters.AddWithValue("@accountType", accountType);
+                        recipientTransactionCmd.ExecuteNonQuery();
+
+                        // Commit transaction
+                        transaction.Commit();
+
+                        TempData["Message"] = "Transfer successful!";
                         return RedirectToAction("TransferFunds");
                     }
-
-                    // ✅ Get sender's balance
-                    string senderQuery = "SELECT balance FROM users WHERE card_number = @senderCardNumber";
-                    using (var senderCmd = new MySqlCommand(senderQuery, connection))
+                    catch (Exception)
                     {
-                        senderCmd.Parameters.AddWithValue("@senderCardNumber", senderCardNumber);
-                        var senderBalanceObj = senderCmd.ExecuteScalar();
-
-                        if (senderBalanceObj != null)
-                        {
-                            decimal senderBalance = Convert.ToDecimal(senderBalanceObj);
-
-                            // ✅ Check if sender has enough funds
-                            if (amount > 0 && amount <= senderBalance)
-                            {
-                                // ✅ Deduct from sender
-                                string deductQuery = "UPDATE users SET balance = balance - @amount WHERE card_number = @senderCardNumber";
-                                using (var deductCmd = new MySqlCommand(deductQuery, connection))
-                                {
-                                    deductCmd.Parameters.AddWithValue("@amount", amount);
-                                    deductCmd.Parameters.AddWithValue("@senderCardNumber", senderCardNumber);
-                                    deductCmd.ExecuteNonQuery();
-                                }
-
-                                // ✅ Add to recipient
-                                string addQuery = "UPDATE users SET balance = balance + @amount WHERE card_number = @recipient";
-                                using (var addCmd = new MySqlCommand(addQuery, connection))
-                                {
-                                    addCmd.Parameters.AddWithValue("@amount", amount);
-                                    addCmd.Parameters.AddWithValue("@recipient", recipient);
-                                    addCmd.ExecuteNonQuery();
-                                }
-
-                                TempData["Message"] = $"Successfully transferred {amount:C} to {recipient}.";
-                            }
-                            else
-                            {
-                                TempData["Error"] = "Insufficient funds or invalid amount!";
-                            }
-                        }
+                        transaction.Rollback();
+                        TempData["Error"] = "Transfer failed. Please try again.";
+                        return RedirectToAction("TransferFunds");
                     }
                 }
             }
-
-            return RedirectToAction("TransferFunds");
         }
-
 
         public IActionResult ChangePin()
         {
@@ -266,6 +352,13 @@ namespace ATMWebApp.Controllers
                 return RedirectToAction("PinEntry"); // Redirect to login if session expired
             }
 
+            // ✅ Ensure new PIN is exactly 6 digits
+            if (!Regex.IsMatch(newPin, @"^\d{6}$"))
+            {
+                TempData["Error"] = "New PIN must be exactly 6 digits!";
+                return RedirectToAction("ChangePin");
+            }
+
             if (newPin != confirmNewPin)
             {
                 TempData["Error"] = "New PINs do not match!";
@@ -276,19 +369,28 @@ namespace ATMWebApp.Controllers
             {
                 connection.Open();
 
-                // ✅ Verify current PIN
-                string query = "SELECT COUNT(*) FROM users WHERE card_number = @cardNumber AND pin = @currentPin";
-                using (var cmd = new MySqlCommand(query, connection))
+                // ✅ Retrieve current PIN from the database
+                string getPinQuery = "SELECT pin FROM users WHERE card_number = @cardNumber";
+                string storedPin;
+
+                using (var cmd = new MySqlCommand(getPinQuery, connection))
                 {
                     cmd.Parameters.AddWithValue("@cardNumber", cardNumber);
-                    cmd.Parameters.AddWithValue("@currentPin", currentPin);
-                    int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    storedPin = cmd.ExecuteScalar()?.ToString();
+                }
 
-                    if (count == 0)
-                    {
-                        TempData["Error"] = "Current PIN is incorrect!";
-                        return RedirectToAction("ChangePin");
-                    }
+                // ✅ Check if the current PIN is correct
+                if (storedPin != currentPin)
+                {
+                    TempData["Error"] = "Current PIN is incorrect!";
+                    return RedirectToAction("ChangePin");
+                }
+
+                // ✅ Prevent setting the same PIN
+                if (storedPin == newPin)
+                {
+                    TempData["Error"] = "New PIN must be different from the current PIN!";
+                    return RedirectToAction("ChangePin");
                 }
 
                 // ✅ Update PIN
@@ -306,40 +408,36 @@ namespace ATMWebApp.Controllers
             return RedirectToAction("ChangePin");
         }
 
-
-      
         public IActionResult MiniStatement()
         {
             string cardNumber = HttpContext.Session.GetString("CardNumber");
 
             if (string.IsNullOrEmpty(cardNumber))
             {
-                return RedirectToAction("PinEntry"); // Redirect to login if session expired
+                return RedirectToAction("PinEntry");
             }
 
             List<Transaction> transactions = new List<Transaction>();
 
-            using (var connection = new MySqlConnection(connectionString))
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                connection.Open();
+                conn.Open();
+                string query = "SELECT date, type, amount, balance, account_type FROM transactions WHERE card_number = @cardNumber ORDER BY date DESC LIMIT 10";
+                MySqlCommand cmd = new MySqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@cardNumber", cardNumber);
 
-                // ✅ Get the last 5 transactions for the user
-                string query = "SELECT date, type, amount, balance FROM transactions WHERE card_number = @cardNumber ORDER BY date DESC LIMIT 5";
-                using (var cmd = new MySqlCommand(query, connection))
+                using (MySqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.Parameters.AddWithValue("@cardNumber", cardNumber);
-                    using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        transactions.Add(new Transaction
                         {
-                            transactions.Add(new Transaction
-                            {
-                                Date = reader.GetDateTime("date").ToString("yyyy-MM-dd HH:mm:ss"),
-                                Type = reader.GetString("type"),
-                                Amount = reader.GetDecimal("amount"),
-                                Balance = reader.GetDecimal("balance")
-                            });
-                        }
+                            Date = reader.GetDateTime("date"),
+                            Type = reader.GetString("type"),
+                            Amount = reader.GetDecimal("amount"),
+                            Balance = reader.GetDecimal("balance"),
+                            AccountType = reader.GetString("account_type") // Get account type
+                        });
                     }
                 }
             }
@@ -347,8 +445,6 @@ namespace ATMWebApp.Controllers
             ViewBag.Transactions = transactions;
             return View();
         }
-
-
 
         public IActionResult DepositCash()
         {
@@ -364,9 +460,8 @@ namespace ATMWebApp.Controllers
         }
 
         [HttpPost]
-        public IActionResult Deposit(decimal amount)
+        public IActionResult DepositFunds(decimal amount, string accountType)
         {
-            // Retrieve card number from session
             string cardNumber = HttpContext.Session.GetString("CardNumber");
 
             if (string.IsNullOrEmpty(cardNumber))
@@ -374,9 +469,20 @@ namespace ATMWebApp.Controllers
                 return RedirectToAction("PinEntry");
             }
 
-            if (amount <= 0)
+            // Validate account type
+            if (accountType != "Savings" && accountType != "Current")
             {
-                TempData["Error"] = "Deposit amount must be greater than zero.";
+                TempData["Message"] = "Invalid account type selected.";
+                return RedirectToAction("DepositCash");
+            }
+
+            // Define deposit limits
+            decimal minDeposit = 100;     // Minimum deposit amount
+            decimal maxDeposit = 100000;  // Maximum deposit amount
+
+            if (amount < minDeposit || amount > maxDeposit)
+            {
+                TempData["Message"] = $"Deposit amount must be between ₱{minDeposit} and ₱{maxDeposit}.";
                 return RedirectToAction("DepositCash");
             }
 
@@ -384,37 +490,63 @@ namespace ATMWebApp.Controllers
             {
                 conn.Open();
 
-            
-                string checkAccountQuery = "SELECT balance FROM users WHERE card_number = @cardNumber";
-                using (MySqlCommand checkCmd = new MySqlCommand(checkAccountQuery, conn))
+                // Fetch current balance
+                string balanceField = accountType == "Savings" ? "savings_balance" : "current_balance";
+                string balanceQuery = $"SELECT {balanceField} FROM users WHERE card_number = @cardNumber";
+
+                MySqlCommand balanceCmd = new MySqlCommand(balanceQuery, conn);
+                balanceCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
+                object balanceResult = balanceCmd.ExecuteScalar();
+
+                if (balanceResult == null)
                 {
-                    checkCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
-                    object result = checkCmd.ExecuteScalar();
+                    TempData["Message"] = "Account not found.";
+                    return RedirectToAction("DepositCash");
+                }
 
-                    if (result == null)
+                decimal balance = Convert.ToDecimal(balanceResult);
+
+                using (MySqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
                     {
-                        TempData["Error"] = "Account not found.";
-                        return RedirectToAction("DepositCash");
-                    }
-
-                    // Get current balance
-                    decimal currentBalance = Convert.ToDecimal(result);
-                    decimal newBalance = currentBalance + amount;
-
-                    // Update the balance
-                    string updateQuery = "UPDATE users SET balance = @newBalance WHERE card_number = @cardNumber";
-                    using (MySqlCommand updateCmd = new MySqlCommand(updateQuery, conn))
-                    {
-                        updateCmd.Parameters.AddWithValue("@newBalance", newBalance);
+                        // Update balance
+                        string updateQuery = $"UPDATE users SET {balanceField} = {balanceField} + @amount WHERE card_number = @cardNumber";
+                        MySqlCommand updateCmd = new MySqlCommand(updateQuery, conn, transaction);
+                        updateCmd.Parameters.AddWithValue("@amount", amount);
                         updateCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
                         updateCmd.ExecuteNonQuery();
-                    }
 
-                    TempData["Message"] = $"Deposit successful! New balance: {newBalance:C}";
+                        // Get updated balance
+                        balanceCmd = new MySqlCommand(balanceQuery, conn, transaction);
+                        balanceCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
+                        balance = Convert.ToDecimal(balanceCmd.ExecuteScalar());
+
+                        // Log transaction
+                        string transactionQuery = "INSERT INTO transactions (card_number, date, type, amount, balance, account_type) VALUES (@cardNumber, @date, @type, @amount, @balance, @accountType)";
+                        MySqlCommand transactionCmd = new MySqlCommand(transactionQuery, conn, transaction);
+                        transactionCmd.Parameters.AddWithValue("@cardNumber", cardNumber);
+                        transactionCmd.Parameters.AddWithValue("@date", DateTime.Now);
+                        transactionCmd.Parameters.AddWithValue("@type", "Deposit");
+                        transactionCmd.Parameters.AddWithValue("@amount", amount);
+                        transactionCmd.Parameters.AddWithValue("@balance", balance);
+                        transactionCmd.Parameters.AddWithValue("@accountType", accountType);
+                        transactionCmd.ExecuteNonQuery();
+
+                        // Commit transaction
+                        transaction.Commit();
+
+                        TempData["Message"] = "Deposit successful!";
+                        return RedirectToAction("DepositCash");
+                    }
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        TempData["Message"] = "Deposit failed. Please try again.";
+                        return RedirectToAction("DepositCash");
+                    }
                 }
             }
-
-            return RedirectToAction("DepositCash");
         }
 
         public IActionResult Logout()

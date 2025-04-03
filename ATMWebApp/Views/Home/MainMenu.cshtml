@@ -21,57 +21,73 @@
 </div>
 
 <style>
+    /* Keep the body normal to avoid shifting the header */
     body {
-        text-align: center;
         background-color: #f4f4f4;
-        font-family: Arial, sans-serif;
+        font-family: 'Poppins', sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 0;
     }
 
+    /* Center the menu without affecting the header */
     .menu-container {
-        margin-top: 50px;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 400px;
+        margin: 50px auto;
+        text-align: center;
     }
 
     h2 {
-        font-size: 28px;
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
         margin-bottom: 10px;
     }
 
     p {
-        font-size: 18px;
+        font-size: 16px;
+        color: #555;
         margin-bottom: 20px;
     }
 
+    /* Button Grid */
     .menu-buttons {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        max-width: 400px;
-        margin: auto;
+        gap: 12px;
     }
 
     .btn {
-        font-size: 20px;
-        padding: 10px;
+        font-size: 16px;
+        padding: 12px;
         background-color: #007bff;
         color: white;
         text-decoration: none;
         border-radius: 5px;
         text-align: center;
+        font-weight: bold;
+        transition: background 0.3s ease-in-out;
+        display: block;
     }
 
         .btn:hover {
             background-color: #0056b3;
         }
 
-    /* Logout Button - Properly Positioned */
+    /* Logout Button */
     .logout-container {
-        margin-top: 30px;
+        margin-top: 20px;
     }
 
     .logout {
         background-color: red;
         padding: 12px 30px;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: bold;
     }
 

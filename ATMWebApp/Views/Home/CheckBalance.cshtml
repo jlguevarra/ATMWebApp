@@ -3,57 +3,95 @@
 }
 
 <div class="balance-container">
-    <h2>Your Account Balance</h2>
-    <p class="balance">₱@ViewBag.Balance.ToString("N2")</p>
+    <h2>Your Account Balances</h2>
+
+    <div class="balance-box">
+        <h3>Current Account</h3>
+        <p class="balance">₱@ViewBag.CurrentBalance.ToString("N2")</p>
+    </div>
+
+    <div class="balance-box">
+        <h3>Savings Account</h3>
+        <p class="balance">₱@ViewBag.SavingsBalance.ToString("N2")</p>
+    </div>
 
     <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
 </div>
 
 <style>
+    /* Ensures header alignment */
     body {
-        text-align: center;
-        font-family: Arial, sans-serif;
         background-color: #f4f4f4;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        text-align: center; /* Keeps text centered without affecting layout */
     }
 
+    /* Centers the balance container */
     .balance-container {
-        margin-top: 50px;
+        width: 90%;
+        max-width: 500px;
+        margin: 80px auto;
+        padding: 25px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
     }
 
     h2 {
-        font-size: 28px;
-        margin-bottom: 20px;
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+
+    /* Styling for account balance boxes */
+    .balance-box {
+        background: white;
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h3 {
+        font-size: 20px;
+        margin-bottom: 5px;
     }
 
     .balance {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: bold;
         color: #28a745;
-        margin-bottom: 20px;
+        margin-top: 5px;
     }
 
+    /* Button Styling */
     .btn {
-        font-size: 20px;
-        padding: 10px;
+        font-size: 18px;
+        padding: 10px 20px;
         background-color: #007bff;
         color: white;
         border: none;
         border-radius: 5px;
         cursor: pointer;
+        transition: background 0.3s;
+        display: block;
+        width: 100%;
+        max-width: 250px;
+        margin: 20px auto;
         text-decoration: none;
     }
 
-        .btn:hover {
-            background-color: #0056b3;
-        }
+    .btn:hover {
+        background-color: #0056b3;
+    }
 
     .back {
         background-color: gray;
-        margin-top: 10px;
-        display: inline-block;
     }
 
-        .back:hover {
-            background-color: darkgray;
-        }
+    .back:hover {
+        background-color: darkgray;
+    }
 </style>

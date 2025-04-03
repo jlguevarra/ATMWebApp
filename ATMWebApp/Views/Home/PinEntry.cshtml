@@ -6,60 +6,80 @@
     <h2>Enter Your PIN</h2>
 
     <form method="post" action="@Url.Action("PinEntry", "Home")">
-        <label>PIN:</label>
-        <input type="password" name="pin" maxlength="4" required autofocus /> <br />
+        <label for="pin">PIN:</label>
+        <input type="password" id="pin" name="pin" maxlength="6" pattern="[0-9]{6}" title="PIN must be exactly 6 digits" required autofocus /> <br />
 
         <button type="submit" class="btn">Enter</button>
     </form>
 
-    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    @if (TempData["Error"] != null)
     {
-        <p class="error">@ViewBag.ErrorMessage</p>
+        <p class="error">@TempData["Error"]</p>
     }
 </div>
 
 <style>
+    /* Keep the header aligned properly */
     body {
-        text-align: center;
         background-color: #f4f4f4;
         font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        text-align: center; /* Only aligns text, does not shift layout */
     }
 
+    /* Center only the PIN form without affecting header */
     .pin-container {
-        margin-top: 100px;
+        width: 90%;
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 30px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
     }
 
     h2 {
-        font-size: 28px;
-        margin-bottom: 10px;
+        font-size: 24px;
+        margin-bottom: 15px;
     }
 
     label {
         font-size: 18px;
         display: block;
-        margin-top: 10px;
+        margin-bottom: 5px;
     }
 
     input {
-        font-size: 24px;
+        font-size: 22px;
         text-align: center;
-        width: 200px;
-        padding: 5px;
-        margin-bottom: 10px;
+        width: 100%;
+        max-width: 250px;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
     }
 
     .btn {
-        font-size: 20px;
+        font-size: 18px;
         padding: 10px 20px;
-        margin-top: 20px;
         background-color: #007bff;
         color: white;
         border: none;
+        border-radius: 5px;
         cursor: pointer;
+        transition: background 0.3s;
     }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
 
     .error {
         color: red;
         margin-top: 10px;
+        font-size: 16px;
     }
 </style>

@@ -15,12 +15,24 @@
         <p class="error-message">@TempData["Error"]</p>
     }
 
-    <form method="post" action="@Url.Action("TransferFunds", "Home")">
-        <label for="recipient">Recipient Card Number:</label>
-        <input type="text" id="recipient" name="recipient" required>
+    <form method="post" action="@Url.Action("TransferFunds", "Home")" onsubmit="return validateTransfer()">
+        <label for="recipientCard">Recipient Card Number:</label>
+        <input type="text" id="recipientCard" name="recipientCard" maxlength="16" minlength="16" required>
+        <small class="note">Enter a 16-digit card number.</small>
+        <br />
 
-        <label for="amount">Amount to Transfer:</label>
-        <input type="number" id="amount" name="amount" min="100" step="100" required> <br />
+        <label for="amount">Amount to Transfer (₱100 - ₱50,000):</label>
+        <input type="number" id="amount" name="amount" min="100" max="50000" step="100" required>
+        <small class="note">Amount must be a multiple of ₱100.</small>
+        <br />
+
+        <label for="accountType">Select Account:</label>
+        <select id="accountType" name="accountType" required>
+            <option value="" disabled selected>Select Account</option>
+            <option value="Current">Current Account</option>
+            <option value="Savings">Savings Account</option>
+        </select>
+        <br />
 
         <button type="submit" class="btn">Transfer</button>
     </form>
@@ -28,44 +40,81 @@
     <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
 </div>
 
+<script>
+    function validateTransfer() {
+        var cardNumber = document.getElementById("recipientCard").value;
+        var amount = parseInt(document.getElementById("amount").value);
+
+        if (!/^\d{16}$/.test(cardNumber)) {
+            alert("Recipient card number must be exactly 16 digits.");
+            return false;
+        }
+
+        if (amount % 100 !== 0) {
+            alert("Transfer amount must be a multiple of ₱100.");
+            return false;
+        }
+
+        return true;
+    }
+</script>
+
 <style>
     body {
         text-align: center;
         font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
+        background-color: #f8f9fa;
+        margin: 0;
+        padding: 0;
     }
 
     .transfer-container {
-        margin-top: 50px;
+        background: white;
+        max-width: 400px;
+        padding: 20px;
+        margin: 50px auto;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     }
 
     h2 {
-        font-size: 28px;
-        margin-bottom: 20px;
+        font-size: 26px;
+        margin-bottom: 15px;
+        color: #333;
     }
 
     label {
         font-size: 18px;
         display: block;
-        margin-bottom: 10px;
+        margin-top: 10px;
+        font-weight: bold;
     }
 
-    input {
+    input, select {
         font-size: 18px;
         padding: 10px;
-        width: 250px;
-        margin-bottom: 20px;
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+
+    .note {
+        font-size: 14px;
+        color: #666;
     }
 
     .btn {
-        font-size: 20px;
-        padding: 10px;
+        font-size: 18px;
+        padding: 12px;
+        width: 100%;
         background-color: #007bff;
         color: white;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        text-decoration: none;
+        margin-top: 10px;
     }
 
         .btn:hover {
@@ -74,8 +123,9 @@
 
     .back {
         background-color: gray;
+        text-align: center;
+        display: block;
         margin-top: 10px;
-        display: inline-block;
     }
 
         .back:hover {
@@ -85,10 +135,12 @@
     .success-message {
         color: green;
         font-weight: bold;
+        margin-bottom: 10px;
     }
 
     .error-message {
         color: red;
         font-weight: bold;
+        margin-bottom: 10px;
     }
 </style>

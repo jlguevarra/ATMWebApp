@@ -5,73 +5,108 @@
 <div class="mini-statement-container">
     <h2>Mini Statement</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Balance</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (ViewBag.Transactions != null)
-            {
-                foreach (var transaction in ViewBag.Transactions)
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Balance</th>
+                    <th>Account Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (ViewBag.Transactions != null && ViewBag.Transactions.Count > 0)
                 {
-                    <tr>
-                        <td>@transaction.Date</td>
-                        <td>@transaction.Type</td>
-                        <td>@transaction.Amount.ToString("C")</td>
-                        <td>@transaction.Balance.ToString("C")</td>
-                    </tr>
+                    foreach (var transaction in ViewBag.Transactions)
+                    {
+                        <tr>
+                            <td>@transaction.Date.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@transaction.Type</td>
+                            <td>@transaction.Amount.ToString("C")</td>
+                            <td>@transaction.Balance.ToString("C")</td>
+                            <td>@transaction.AccountType</td>
+                        </tr>
+                    }
                 }
-            }
-            else
-            {
-                <tr><td colspan="4">No transactions found.</td></tr>
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    <tr><td colspan="5" class="no-transactions">No transactions found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
 
     <a href="@Url.Action("MainMenu", "Home")" class="btn back">Back</a>
 </div>
 
 <style>
+    /* Full-page styling */
     body {
         text-align: center;
         font-family: Arial, sans-serif;
         background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
     }
 
     .mini-statement-container {
-        margin-top: 50px;
+        margin: 50px auto;
+        width: 90%;
+        max-width: 800px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     }
 
     h2 {
-        font-size: 28px;
-        margin-bottom: 20px;
+        font-size: 24px;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
     }
 
     table {
-        width: 80%;
-        margin: 0 auto;
+        width: 100%;
         border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     }
 
     th, td {
-        padding: 10px;
+        padding: 12px;
         border: 1px solid #ddd;
+        text-align: center;
+        white-space: nowrap; /* Prevents text from wrapping */
     }
 
     th {
         background-color: #007bff;
         color: white;
+        text-transform: uppercase;
+    }
+
+    td {
+        font-size: 16px;
+    }
+
+    .no-transactions {
+        font-size: 18px;
+        color: #888;
+        text-align: center;
+        padding: 15px;
     }
 
     .btn {
-        font-size: 20px;
-        padding: 10px;
+        font-size: 18px;
+        padding: 10px 20px;
         background-color: #007bff;
         color: white;
         border: none;
@@ -80,6 +115,7 @@
         text-decoration: none;
         margin-top: 20px;
         display: inline-block;
+        width: 150px;
     }
 
         .btn:hover {

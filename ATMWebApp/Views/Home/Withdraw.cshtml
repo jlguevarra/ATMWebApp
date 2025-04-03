@@ -5,14 +5,26 @@
 <div class="withdraw-container">
     <h2>Withdraw Cash</h2>
 
-    @if (ViewBag.Message != null)
+    @if (TempData["Message"] != null)
     {
-        <p class="success-message">@ViewBag.Message</p>
+        <p class="success-message">@TempData["Message"]</p>
     }
 
-    <form method="post" action="@Url.Action("Withdraw", "Home")">
+    @if (TempData["Error"] != null)
+    {
+        <p class="error-message">@TempData["Error"]</p>
+    }
+
+    <form method="post" action="@Url.Action("WithdrawFunds", "Home")">
         <label for="amount">Amount to Withdraw:</label>
-        <input type="number" id="amount" name="amount" min="100" step="100" required> <br />
+        <input type="number" id="amount" name="amount" min="500" step="500" max="10000" required>
+
+        <label for="accountType">Select Account Type:</label>
+        <select id="accountType" name="accountType" required>
+            <option value="" disabled selected>Select Account</option>
+            <option value="Current">Current Account</option>
+            <option value="Savings">Savings Account</option>
+        </select>
 
         <button type="submit" class="btn">Withdraw</button>
     </form>
@@ -21,43 +33,61 @@
 </div>
 
 <style>
+    /* Ensure header stays properly aligned */
     body {
-        text-align: center;
-        font-family: Arial, sans-serif;
         background-color: #f4f4f4;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        text-align: center; /* Ensures text is centered but not affecting layout */
     }
 
+    /* Center the withdraw form without affecting header */
     .withdraw-container {
-        margin-top: 50px;
+        width: 90%;
+        max-width: 400px;
+        margin: 80px auto;
+        padding: 25px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
     }
 
     h2 {
-        font-size: 28px;
-        margin-bottom: 20px;
+        font-size: 24px;
+        margin-bottom: 15px;
     }
 
     label {
         font-size: 18px;
         display: block;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
-    input {
+    input, select {
         font-size: 18px;
+        width: 100%;
+        max-width: 250px;
         padding: 10px;
-        width: 250px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
     }
 
     .btn {
-        font-size: 20px;
-        padding: 10px;
+        font-size: 18px;
+        padding: 10px 20px;
         background-color: #dc3545;
         color: white;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        text-decoration: none;
+        transition: background 0.3s;
+        display: block;
+        width: 100%;
+        max-width: 250px;
+        margin: 10px auto;
     }
 
         .btn:hover {
@@ -66,8 +96,6 @@
 
     .back {
         background-color: gray;
-        margin-top: 10px;
-        display: inline-block;
     }
 
         .back:hover {
@@ -77,10 +105,12 @@
     .success-message {
         color: green;
         font-weight: bold;
+        margin-bottom: 10px;
     }
 
     .error-message {
         color: red;
         font-weight: bold;
+        margin-bottom: 10px;
     }
 </style>
